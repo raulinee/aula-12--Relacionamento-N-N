@@ -41,8 +41,7 @@ inscricoes = Table(
     "incricoes", #nome da tabela
     Base.metadata,
     Column("aluno_id", Integer, ForeignKey("alunos.id"), primary_key=True),
-    Column("curso_id", Integer, ForeignKey("cursos.id"), primary_key=True),
-    
+    Column("curso_id", Integer, ForeignKey("cursos.id"), primary_key=True), 
 )
 
 #Conexão com db
@@ -51,3 +50,27 @@ engine = create_engine("sqlite:///gestao_escolar.db")
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
+
+
+#Criar
+def cadastrar_curso():
+    with Session() as session:
+        try:
+            #Criar o objeto curso
+            nome_curso = input("Digite o nome do curso: ").capitalize()
+            curso = Curso(nome=nome_curso)
+            #Adicionar no banco
+            session.add(curso)
+            #Salvar
+            session.commit()
+            print(f"Curso {nome_curso} cadastrado com sucesso!")
+        except Exception as erro:
+            session.rollback()
+            print(f"Ocorreu um erro {erro}")
+
+
+#Listar
+
+#Atualizar
+
+#Deletar
