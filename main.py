@@ -1,10 +1,10 @@
 # Relacionamentos Muitos para muitos (N:N)
 
 # Estudantes se inscrevem em cursos.
-# um estudante pode fazer varios cursos
-# um curso pode ter varios estudantes
+# um estudante pode fazer vários cursos
+# um curso pode ter vários estudantes
 
-# Fora simples:
+# Forma simples:
 # A relação não precisa guardar dados extras
 # Só fazer o relacionamento
 
@@ -12,6 +12,14 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 Base = declarative_base()
+
+#Tabela Intermediária
+inscricoes = Table(
+    "inscricoes", #nome da tabela
+    Base.metadata,
+    Column("aluno_id", Integer, ForeignKey("alunos.id"), primary_key=True),
+    Column("curso_id", Integer, ForeignKey("cursos.id"), primary_key=True),
+)
 
 # Tabelas curso e aluno
 class Aluno(Base):
@@ -21,10 +29,13 @@ class Aluno(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(100), nullable=False)
 
+    #Relacionamento
+    cursos = relationship("Curso", secondary=inscricoes, back_populates="alunos")
+
     #Função para imprimir
     def __repr__(self):
-        return f"ID: {self.id} - Nome: {self.nome}"
-    
+        return f"ID: {self.id} - NOME: {self.nome}"
+
 class Curso(Base):
     __tablename__ = "cursos"
 
@@ -32,17 +43,12 @@ class Curso(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(100), nullable=False)
 
+    alunos = relationship("Aluno", secondary=inscricoes, back_populates="cursos")
+
     #Função para imprimir
     def __repr__(self):
-        return f"ID: {self.id} - Nome: {self.nome}"
-    
-#Tabela intermediaria
-inscricoes = Table(
-    "incricoes", #nome da tabela
-    Base.metadata,
-    Column("aluno_id", Integer, ForeignKey("alunos.id"), primary_key=True),
-    Column("curso_id", Integer, ForeignKey("cursos.id"), primary_key=True), 
-)
+        return f"ID: {self.id} - NOME: {self.nome}"
+   
 
 #Conexão com db
 engine = create_engine("sqlite:///gestao_escolar.db")
@@ -60,17 +66,114 @@ def cadastrar_curso():
             nome_curso = input("Digite o nome do curso: ").capitalize()
             curso = Curso(nome=nome_curso)
             #Adicionar no banco
-            session.add(curso)
+            session.add(curso)  
             #Salvar
-            session.commit()
+            session.commit()        
             print(f"Curso {nome_curso} cadastrado com sucesso!")
         except Exception as erro:
             session.rollback()
             print(f"Ocorreu um erro {erro}")
 
+# cadastrar_curso()
+
+def cadastrar_aluno():
+    with Session() as session:
+        try:
+            #Buscar o curso do aluno
+            nome_curso = input("Digite o nome do curso para cadastrar o aluno: ").capitalize()
+            curso = session.query(Curso).filter_by(nome=nome_curso).first()
+            if curso == None:
+                print(f"Nenhum curso encontrado com esse nome {nome_curso}")
+                return
+            else:
+                nome_aluno = input("Digite o nome do aluno para cadastrar: ").capitalize()
+                aluno = Aluno(nome=nome_aluno)
+                aluno.cursos.append(curso)
+
+                session.add(aluno)
+                session.commit()
+                print(f"Aluno cadastrado com sucesso!")
+        except Exception as erro:
+            session.rollback()
+            print(f"Ocorreu um erro {erro}")
+# cadastrar_aluno()
+
+
+def adicionar_curso():
+    with Session() as session:
+        try:
+            #Buscar o curso do aluno
+            nome_curso = input("Digite o nome do curso para inserir o aluno: ").capitalize()
+            curso = session.query(Curso).filter_by(nome=nome_curso).first()
+            if curso == None:
+                print(f"Nenhum curso encontrado com esse nome {nome_curso}")
+                return
+            else:
+                nome_aluno = input("Digite o nome do aluno para cadastrar: ").capitalize()
+                aluno = session.query(Aluno).filter_by(nome=nome_aluno).first()
+                if aluno == None:
+                    print(f"Nenhum aluno cadastro com esse nome {nome_aluno}")
+                    return
+                else:
+                    aluno.cursos.append(curso)
+                    session.commit()
+                    print(f"Aluno registro com sucesso no curso {nome_curso}")
+        except Exception as erro:
+            session.rollback()
+            print(f"Ocorreu um erro {erro}")
+#adicionar_curso()
+
 
 #Listar
+def Listar_cursos():
+    with Session() as session:
+        try:
+            #Como pegar todos os registros de tabela?
+            todos_cursos = session.query(Curso).all()
+            for curso in todos_cursos:
+                print(f"\n--- Curso ---")
+                print(curso.nome)
+                for aluno in curso.alunos:
+                    print(aluno.nome)
+
+        except Exception as erro:
+            session.rollback()
+            print(f"Ocorreu um erro {erro}")
+
+#Listar_cursos()
+
+def listar_alunos():
+    with Session() as session:
+        try:
+            #Como pegar todos os registros da tabela?
+            todos_alunos = session.query(Aluno).all()
+            for aluno in todos_alunos:
+                nomes_cursos = [curso.nome for curso in aluno.cursos]
+                print(f"Nome: {aluno.nome} - Cursos: {nomes_cursos}")
+        except Exception as erro:
+            session.rollback()
+            print(f"Ocorreu um erro {erro}")
+
+#listar_alunos()
+
 
 #Atualizar
+
+def Atualizar_aluno():
+    with Session() as session:
+        try:
+            aluno = session.query(Aluno).filter(Aluno.id == aluno).first()
+            if aluno:
+                aluno.nome = []
+                session.commit()        
+                print(f"Aluno ID {aluno} atualizado para {novo_nome}")
+            else:
+                print(f"Aluno com ID {aluno} não encontrado.")
+        except Exception as erro:
+            session.rollback()
+            print(f"Ocorreu um erro ao atualizar: {erro}")
+
+
+Atualizar_aluno()
 
 #Deletar
